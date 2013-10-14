@@ -1,5 +1,17 @@
 Revision history for MooseX-Role-MongoDB
 
+0.002     2013-10-14 13:55:42 America/New_York
+
+    [CHANGED]
+
+    - If a 'host' attributes is provided in the client options hash, any
+      hostnames will be converted to IP addresses to work around a MongoDB
+      client bug involving replica sets and SSL
+
+    [INTERNAL]
+
+    - Added optional debug-level logging via Log::Any
+
 0.001     2013-09-21 23:27:05 America/New_York
 
     - First release

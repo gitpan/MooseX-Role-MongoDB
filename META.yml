@@ -5,19 +5,17 @@ author:
 build_requires:
   ExtUtils::MakeMaker: 0
   File::Spec::Functions: 0
-  File::Temp: 0
-  IO::Handle: 0
-  IPC::Open3: 0
   List::Util: 0
+  Log::Any::Adapter: 0
   Moose: 0
   Parallel::Iterator: 0
   Test::FailWarnings: 0
   Test::More: 0.96
   Test::Requires: 0
 configure_requires:
-  ExtUtils::MakeMaker: 6.30
+  ExtUtils::MakeMaker: 6.17
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132620'
+generated_by: 'Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132830'
 license: apache
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -34,11 +32,15 @@ no_index:
 provides:
   MooseX::Role::MongoDB:
     file: lib/MooseX/Role/MongoDB.pm
-    version: 0.001
+    version: 0.002
 requires:
+  Carp: 0
+  Log::Any: 0
   MongoDB::MongoClient: 0.702
   Moose::Role: 2
   MooseX::AttributeShortcuts: 0
+  Socket: 0
+  String::Flogger: 0
   Type::Params: 0
   Types::Standard: 0
   namespace::autoclean: 0
@@ -49,5 +51,5 @@ resources:
   bugtracker: https://github.com/dagolden/MooseX-Role-MongoDB/issues
   homepage: https://github.com/dagolden/MooseX-Role-MongoDB
   repository: https://github.com/dagolden/MooseX-Role-MongoDB.git
-version: 0.001
+version: 0.002
 x_authority: cpan:DAGOLDEN

@@ -4,7 +4,7 @@ use warnings;
 
 use 5.010000;
 
-use ExtUtils::MakeMaker 6.30;
+use ExtUtils::MakeMaker 6.17;
 
 
 
@@ -13,16 +13,20 @@ my %WriteMakefileArgs = (
   "AUTHOR" => "David Golden <dagolden\@cpan.org>",
   "BUILD_REQUIRES" => {},
   "CONFIGURE_REQUIRES" => {
-    "ExtUtils::MakeMaker" => "6.30"
+    "ExtUtils::MakeMaker" => "6.17"
   },
   "DISTNAME" => "MooseX-Role-MongoDB",
   "EXE_FILES" => [],
   "LICENSE" => "apache",
   "NAME" => "MooseX::Role::MongoDB",
   "PREREQ_PM" => {
+    "Carp" => 0,
+    "Log::Any" => 0,
     "MongoDB::MongoClient" => "0.702",
     "Moose::Role" => 2,
     "MooseX::AttributeShortcuts" => 0,
+    "Socket" => 0,
+    "String::Flogger" => 0,
     "Type::Params" => 0,
     "Types::Standard" => 0,
     "namespace::autoclean" => 0,
@@ -32,17 +36,15 @@ my %WriteMakefileArgs = (
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
     "File::Spec::Functions" => 0,
-    "File::Temp" => 0,
-    "IO::Handle" => 0,
-    "IPC::Open3" => 0,
     "List::Util" => 0,
+    "Log::Any::Adapter" => 0,
     "Moose" => 0,
     "Parallel::Iterator" => 0,
     "Test::FailWarnings" => 0,
     "Test::More" => "0.96",
     "Test::Requires" => 0
   },
-  "VERSION" => "0.001",
+  "VERSION" => "0.002",
   "test" => {
     "TESTS" => "t/*.t"
   }

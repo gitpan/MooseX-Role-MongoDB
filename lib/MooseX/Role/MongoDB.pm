@@ -4,12 +4,16 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.001'; # VERSION
+our $VERSION = '0.002'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
 
+use Carp ();
+use Log::Any;
 use MongoDB::MongoClient 0.702;
+use Socket qw/:addrinfo SOCK_RAW/; # IPv6 capable
+use String::Flogger qw/flog/;
 use Type::Params qw/compile/;
 use Types::Standard qw/:types/;
 use namespace::autoclean;
@@ -58,7 +62,11 @@ has _mongo_client => (
 sub _build__mongo_client {
     my ($self) = @_;
     my $options = { %{ $self->_mongo_client_options } };
+    if ( exists $options->{host} ) {
+        $options->{host} = $self->_host_names_to_ip( $options->{host} );
+    }
     $options->{db_name} //= $self->_mongo_default_database;
+    $self->_mongo_log( debug => "connecting to MongoDB with %s", $options );
     return MongoDB::MongoClient->new($options);
 }
 
@@ -79,6 +87,17 @@ has _mongo_collection_cache => (
 sub _build__mongo_collection_cache { return {} }
 
 #--------------------------------------------------------------------------#
+# Logging attribute
+#--------------------------------------------------------------------------#
+
+# XXX eventually, isa will be Log::Any::Proxy, but that hasn't shipped yet
+has _mongo_logger => (
+    is      => 'ro',
+    isa     => 'Object',
+    default => sub { Log::Any->get_logger },
+);
+
+#--------------------------------------------------------------------------#
 # Public methods
 #--------------------------------------------------------------------------#
 
@@ -88,6 +107,7 @@ sub mongo_database {
     my ( $self, $database ) = $check->(@_);
     $database //= $self->_mongo_default_database;
     $self->_mongo_check_pid;
+    $self->_mongo_log( debug => "retrieving database $database" );
     return $self->_mongo_database_cache->{$database} //=
       $self->_mongo_client->get_database($database);
 }
@@ -99,6 +119,7 @@ sub mongo_collection {
     my ( $database, $collection ) =
       @args > 1 ? @args : ( $self->_mongo_default_database, $args[0] );
     $self->_mongo_check_pid;
+    $self->_mongo_log( debug => "retrieving collection $database.$collection" );
     return $self->_mongo_collection_cache->{$database}{$collection} //=
       $self->mongo_database($database)->get_collection($collection);
 }
@@ -111,12 +132,80 @@ sub mongo_collection {
 sub _mongo_check_pid {
     my ($self) = @_;
     if ( $$ != $self->_mongo_pid ) {
+        $self->_mongo_log( debug => "clearing MongoDB caches" );
         $self->_set__mongo_pid($$);
         $self->_clear_mongo_collection_cache;
         $self->_clear_mongo_database_cache;
         $self->_clear_mongo_client;
     }
     return;
+}
+
+sub _mongo_log {
+    my ( $self, $level, @msg ) = @_;
+    $msg[0] = "$self ($$) $msg[0]";
+    $self->_mongo_logger->$level( flog( [@msg] ) );
+}
+
+sub _parse_connection_uri {
+    my ( $self, $uri ) = @_;
+    my %parse;
+    if (
+        $uri =~ m{ ^
+            mongodb://
+            (?: ([^:]*) : ([^@]*) @ )? # [username:password@]
+            ([^/]*) # host1[:port1][,host2[:port2],...[,hostN[:portN]]]
+            (?:
+               / ([^?]*) # /[database]
+                (?: [?] (.*) )? # [?options]
+            )?
+            $ }x
+      )
+    {
+        return {
+            username  => $1 // '',
+            password  => $2 // '',
+            hostpairs => $3 // '',
+            db_name   => $4 // '',
+            options   => $5 // '',
+        };
+    }
+    return;
+}
+
+sub _host_names_to_ip {
+    my ( $self, $uri ) = @_;
+    my $parsed = $self->_parse_connection_uri($uri)
+      or Carp::confess("Could not parse connection string '$uri'\n");
+
+    # convert hostnames to IP addresses to work around
+    # some MongoDB bugs/inefficiencies
+    my @pairs;
+    for my $p ( split /,/, $parsed->{hostpairs} ) {
+        my ( $host, $port ) = split /:/, $p;
+        my $ipaddr;
+        for my $family ( Socket::AF_INET(), Socket::AF_INET6() ) {
+            my ( $err, $res ) =
+              getaddrinfo( $host, "", { family => $family, socktype => SOCK_RAW } );
+            next if $err;
+            ( $err, $ipaddr ) = getnameinfo( $res->{addr}, NI_NUMERICHOST, NIx_NOSERV );
+            last if defined $ipaddr;
+        }
+        Carp::croak "Cannot resolve address for '$host'" unless defined $ipaddr;
+        $ipaddr .= ":$port" if length $port;
+        push @pairs, $ipaddr;
+    }
+
+    # reassemble new host URI
+    my $new_host = "mongodb://";
+    $new_host .= "$parsed->{username}:$parsed->{password}\@"
+      if length $parsed->{username};
+    $new_host .= join( ",", @pairs );
+    $new_host .= "/" if length $parsed->{database} || length $parsed->{options};
+    $new_host .= $parsed->{database}   if length $parsed->{database};
+    $new_host .= "?$parsed->{options}" if length $parsed->{options};
+
+    return $new_host;
 }
 
 1;
@@ -136,7 +225,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 SYNOPSIS
 
@@ -198,6 +287,7 @@ each time you need them.
     $obj->mongo_database( $database_name );
 
 Returns a L<MongoDB::Database>.  The argument is the database name.
+With no argument, the default database name is used.
 
 =head2 mongo_collection
 
@@ -256,8 +346,19 @@ allow connecting to different hosts.  You may want to set it explicitly or you
 may want to have your own public attribute for users to set (as shown in the
 L</SYNOPSIS>).  The choice is up to you.
 
+If a MongoDB C<host> string is provided in the client options hash, any host
+names will be converted to IP addresses to avoid known bugs using
+authentication over SSL.
+
 Note that the C<_mongo_default_database> is also used as the default database for
 authentication, unless a C<db_name> is provided to C<_mongo_client_options>.
+
+=head1 LOGGING
+
+This role logs using L<Log::Any>, which by default uses a "Null" logger and
+discards messages.  Currently, only 'debug' level logs messages are generated
+for tracing MongoDB interactions activity across forks.  See the tests for an
+example of how to enable it.
 
 =head1 SEE ALSO
 

@@ -3,7 +3,7 @@ NAME
     collections
 
 VERSION
-    version 0.001
+    version 0.002
 
 SYNOPSIS
     In your module:
@@ -60,7 +60,8 @@ METHODS
   mongo_database
         $obj->mongo_database( $database_name );
 
-    Returns a MongoDB::Database. The argument is the database name.
+    Returns a MongoDB::Database. The argument is the database name. With no
+    argument, the default database name is used.
 
   mongo_collection
         $obj->mongo_collection( $database_name, $collection_name );
@@ -97,9 +98,19 @@ CONFIGURING
     public attribute for users to set (as shown in the "SYNOPSIS"). The
     choice is up to you.
 
+    If a MongoDB "host" string is provided in the client options hash, any
+    host names will be converted to IP addresses to avoid known bugs using
+    authentication over SSL.
+
     Note that the "_mongo_default_database" is also used as the default
     database for authentication, unless a "db_name" is provided to
     "_mongo_client_options".
+
+LOGGING
+    This role logs using Log::Any, which by default uses a "Null" logger and
+    discards messages. Currently, only 'debug' level logs messages are
+    generated for tracing MongoDB interactions activity across forks. See
+    the tests for an example of how to enable it.
 
 SEE ALSO
     *   Moose
