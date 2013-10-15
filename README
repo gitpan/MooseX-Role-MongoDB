@@ -3,7 +3,7 @@ NAME
     collections
 
 VERSION
-    version 0.002
+    version 0.003
 
 SYNOPSIS
     In your module:
@@ -56,6 +56,12 @@ DESCRIPTION
     if there is a chance of your code forking. Instead, request them again
     each time you need them.
 
+REQUIREMENTS
+  logger
+    You must provide a method that returns a logging object. It must
+    implement at least the "info" and "debug" methods. MooseX::Role::Logger
+    is recommended, but other logging roles may be sufficient.
+
 METHODS
   mongo_database
         $obj->mongo_database( $database_name );
@@ -107,10 +113,9 @@ CONFIGURING
     "_mongo_client_options".
 
 LOGGING
-    This role logs using Log::Any, which by default uses a "Null" logger and
-    discards messages. Currently, only 'debug' level logs messages are
-    generated for tracing MongoDB interactions activity across forks. See
-    the tests for an example of how to enable it.
+    Currently, only 'debug' level logs messages are generated for tracing
+    MongoDB interaction activity across forks. See the tests for an example
+    of how to enable it.
 
 SEE ALSO
     *   Moose

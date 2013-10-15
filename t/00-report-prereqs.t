@@ -16,12 +16,12 @@ my @modules = qw(
   ExtUtils::MakeMaker
   File::Spec::Functions
   List::Util
-  Log::Any
   Log::Any::Adapter
   MongoDB::MongoClient
   Moose
   Moose::Role
   MooseX::AttributeShortcuts
+  MooseX::Role::Logger
   Parallel::Iterator
   Socket
   String::Flogger

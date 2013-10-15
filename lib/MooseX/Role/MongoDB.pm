@@ -4,19 +4,25 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.002'; # VERSION
+our $VERSION = '0.003'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
 
 use Carp ();
-use Log::Any;
 use MongoDB::MongoClient 0.702;
 use Socket qw/:addrinfo SOCK_RAW/; # IPv6 capable
 use String::Flogger qw/flog/;
 use Type::Params qw/compile/;
 use Types::Standard qw/:types/;
 use namespace::autoclean;
+
+#--------------------------------------------------------------------------#
+# Dependencies
+#--------------------------------------------------------------------------#
+
+
+requires 'logger';
 
 #--------------------------------------------------------------------------#
 # Configuration attributes
@@ -87,17 +93,6 @@ has _mongo_collection_cache => (
 sub _build__mongo_collection_cache { return {} }
 
 #--------------------------------------------------------------------------#
-# Logging attribute
-#--------------------------------------------------------------------------#
-
-# XXX eventually, isa will be Log::Any::Proxy, but that hasn't shipped yet
-has _mongo_logger => (
-    is      => 'ro',
-    isa     => 'Object',
-    default => sub { Log::Any->get_logger },
-);
-
-#--------------------------------------------------------------------------#
 # Public methods
 #--------------------------------------------------------------------------#
 
@@ -144,7 +139,7 @@ sub _mongo_check_pid {
 sub _mongo_log {
     my ( $self, $level, @msg ) = @_;
     $msg[0] = "$self ($$) $msg[0]";
-    $self->_mongo_logger->$level( flog( [@msg] ) );
+    $self->logger->$level( flog( [@msg] ) );
 }
 
 sub _parse_connection_uri {
@@ -225,7 +220,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.002
+version 0.003
 
 =head1 SYNOPSIS
 
@@ -279,6 +274,14 @@ process.
 When using this role, you should not hold onto MongoDB objects for long if
 there is a chance of your code forking.  Instead, request them again
 each time you need them.
+
+=head1 REQUIREMENTS
+
+=head2 logger
+
+You must provide a method that returns a logging object.  It must implement
+at least the C<info> and C<debug> methods.  L<MooseX::Role::Logger> is
+recommended, but other logging roles may be sufficient.
 
 =head1 METHODS
 
@@ -355,10 +358,9 @@ authentication, unless a C<db_name> is provided to C<_mongo_client_options>.
 
 =head1 LOGGING
 
-This role logs using L<Log::Any>, which by default uses a "Null" logger and
-discards messages.  Currently, only 'debug' level logs messages are generated
-for tracing MongoDB interactions activity across forks.  See the tests for an
-example of how to enable it.
+Currently, only 'debug' level logs messages are generated for tracing MongoDB
+interaction activity across forks.  See the tests for an example of how to
+enable it.
 
 =head1 SEE ALSO
 

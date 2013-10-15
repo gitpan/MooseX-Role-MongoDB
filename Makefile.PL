@@ -21,7 +21,6 @@ my %WriteMakefileArgs = (
   "NAME" => "MooseX::Role::MongoDB",
   "PREREQ_PM" => {
     "Carp" => 0,
-    "Log::Any" => 0,
     "MongoDB::MongoClient" => "0.702",
     "Moose::Role" => 2,
     "MooseX::AttributeShortcuts" => 0,
@@ -39,12 +38,13 @@ my %WriteMakefileArgs = (
     "List::Util" => 0,
     "Log::Any::Adapter" => 0,
     "Moose" => 0,
+    "MooseX::Role::Logger" => 0,
     "Parallel::Iterator" => 0,
     "Test::FailWarnings" => 0,
     "Test::More" => "0.96",
     "Test::Requires" => 0
   },
-  "VERSION" => "0.002",
+  "VERSION" => "0.003",
   "test" => {
     "TESTS" => "t/*.t"
   }
