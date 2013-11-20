@@ -4,14 +4,14 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.003'; # VERSION
+our $VERSION = '0.004'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
 
 use Carp ();
 use MongoDB::MongoClient 0.702;
-use Socket qw/:addrinfo SOCK_RAW/; # IPv6 capable
+use Socket 1.96 qw/:addrinfo SOCK_RAW/; # IPv6 capable
 use String::Flogger qw/flog/;
 use Type::Params qw/compile/;
 use Types::Standard qw/:types/;
@@ -60,9 +60,10 @@ has _mongo_pid => (
 );
 
 has _mongo_client => (
-    is      => 'lazy',
-    isa     => InstanceOf ['MongoDB::MongoClient'],
-    clearer => 1,
+    is        => 'lazy',
+    isa       => InstanceOf ['MongoDB::MongoClient'],
+    clearer   => 1,
+    predicate => '_has_mongo_client',
 );
 
 sub _build__mongo_client {
@@ -101,7 +102,7 @@ sub mongo_database {
     state $check = compile( Object, Optional [Str] );
     my ( $self, $database ) = $check->(@_);
     $database //= $self->_mongo_default_database;
-    $self->_mongo_check_pid;
+    $self->_mongo_check_connection;
     $self->_mongo_log( debug => "retrieving database $database" );
     return $self->_mongo_database_cache->{$database} //=
       $self->_mongo_client->get_database($database);
@@ -113,7 +114,7 @@ sub mongo_collection {
     my ( $self, @args ) = $check->(@_);
     my ( $database, $collection ) =
       @args > 1 ? @args : ( $self->_mongo_default_database, $args[0] );
-    $self->_mongo_check_pid;
+    $self->_mongo_check_connection;
     $self->_mongo_log( debug => "retrieving collection $database.$collection" );
     return $self->_mongo_collection_cache->{$database}{$collection} //=
       $self->mongo_database($database)->get_collection($collection);
@@ -124,15 +125,25 @@ sub mongo_collection {
 #--------------------------------------------------------------------------#
 
 # check if we've forked and need to reconnect
-sub _mongo_check_pid {
+sub _mongo_check_connection {
     my ($self) = @_;
+
+    my $reset_reason;
     if ( $$ != $self->_mongo_pid ) {
-        $self->_mongo_log( debug => "clearing MongoDB caches" );
+        $reset_reason = "PID change";
+    }
+    elsif ( $self->_has_mongo_client && !$self->_mongo_client->connected ) {
+        $reset_reason = "Not connected";
+    }
+
+    if ($reset_reason) {
+        $self->_mongo_log( debug => "clearing MongoDB caches: $reset_reason" );
         $self->_set__mongo_pid($$);
         $self->_clear_mongo_collection_cache;
         $self->_clear_mongo_database_cache;
         $self->_clear_mongo_client;
     }
+
     return;
 }
 
@@ -187,7 +198,7 @@ sub _host_names_to_ip {
             last if defined $ipaddr;
         }
         Carp::croak "Cannot resolve address for '$host'" unless defined $ipaddr;
-        $ipaddr .= ":$port" if length $port;
+        $ipaddr .= ":$port" if defined $port && length $port;
         push @pairs, $ipaddr;
     }
 
@@ -196,8 +207,8 @@ sub _host_names_to_ip {
     $new_host .= "$parsed->{username}:$parsed->{password}\@"
       if length $parsed->{username};
     $new_host .= join( ",", @pairs );
-    $new_host .= "/" if length $parsed->{database} || length $parsed->{options};
-    $new_host .= $parsed->{database}   if length $parsed->{database};
+    $new_host .= "/" if length $parsed->{db_name} || length $parsed->{options};
+    $new_host .= $parsed->{db_name} if length $parsed->{db_name};
     $new_host .= "?$parsed->{options}" if length $parsed->{options};
 
     return $new_host;
@@ -212,7 +223,7 @@ __END__
 
 =pod
 
-=encoding utf-8
+=encoding UTF-8
 
 =head1 NAME
 
@@ -220,7 +231,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.003
+version 0.004
 
 =head1 SYNOPSIS
 
@@ -267,9 +278,12 @@ be generated lazily on demand and cached.  The role manages a single
 L<MongoDB::MongoClient> connection, but many L<MongoDB::Database> and
 L<MongoDB::Collection> objects.
 
-The role also compensates for forks.  If a fork is detected, the object caches
-are cleared and new connections and objects will be generated in the new
-process.
+The role also compensates for dropped connections and forks.  If these are
+detected, the object caches are cleared and new connections and objects will be
+generated in the new process.
+
+Note that a lost connection will not be detectable until I<after> an exception
+is thrown due to a failed operation.
 
 When using this role, you should not hold onto MongoDB objects for long if
 there is a chance of your code forking.  Instead, request them again

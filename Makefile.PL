@@ -24,7 +24,7 @@ my %WriteMakefileArgs = (
     "MongoDB::MongoClient" => "0.702",
     "Moose::Role" => 2,
     "MooseX::AttributeShortcuts" => 0,
-    "Socket" => 0,
+    "Socket" => "1.96",
     "String::Flogger" => 0,
     "Type::Params" => 0,
     "Types::Standard" => 0,
@@ -44,37 +44,42 @@ my %WriteMakefileArgs = (
     "Test::More" => "0.96",
     "Test::Requires" => 0
   },
-  "VERSION" => "0.003",
+  "VERSION" => "0.004",
   "test" => {
     "TESTS" => "t/*.t"
   }
 );
 
 
-unless ( eval { ExtUtils::MakeMaker->VERSION(6.63_03) } ) {
-  my $tr = delete $WriteMakefileArgs{TEST_REQUIRES};
-  my $br = $WriteMakefileArgs{BUILD_REQUIRES};
-  for my $mod ( keys %$tr ) {
-    if ( exists $br->{$mod} ) {
-      $br->{$mod} = $tr->{$mod} if $tr->{$mod} > $br->{$mod};
-    }
-    else {
-      $br->{$mod} = $tr->{$mod};
-    }
-  }
-}
+my %FallbackPrereqs = (
+  "Carp" => 0,
+  "ExtUtils::MakeMaker" => 0,
+  "File::Spec::Functions" => 0,
+  "List::Util" => 0,
+  "Log::Any::Adapter" => 0,
+  "MongoDB::MongoClient" => "0.702",
+  "Moose" => 0,
+  "Moose::Role" => 2,
+  "MooseX::AttributeShortcuts" => 0,
+  "MooseX::Role::Logger" => 0,
+  "Parallel::Iterator" => 0,
+  "Socket" => "1.96",
+  "String::Flogger" => 0,
+  "Test::FailWarnings" => 0,
+  "Test::More" => "0.96",
+  "Test::Requires" => 0,
+  "Type::Params" => 0,
+  "Types::Standard" => 0,
+  "namespace::autoclean" => 0,
+  "strict" => 0,
+  "warnings" => 0
+);
 
-unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
-  my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
-  my $pp = $WriteMakefileArgs{PREREQ_PM};
-  for my $mod ( keys %$br ) {
-    if ( exists $pp->{$mod} ) {
-      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
-    }
-    else {
-      $pp->{$mod} = $br->{$mod};
-    }
-  }
+
+unless ( eval { ExtUtils::MakeMaker->VERSION(6.63_03) } ) {
+  delete $WriteMakefileArgs{TEST_REQUIRES};
+  delete $WriteMakefileArgs{BUILD_REQUIRES};
+  $WriteMakefileArgs{PREREQ_PM} = \%FallbackPrereqs;
 }
 
 delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
