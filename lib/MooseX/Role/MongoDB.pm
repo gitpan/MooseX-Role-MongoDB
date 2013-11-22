@@ -4,7 +4,7 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.004'; # VERSION
+our $VERSION = '0.005'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
@@ -120,6 +120,15 @@ sub mongo_collection {
       $self->mongo_database($database)->get_collection($collection);
 }
 
+
+sub mongo_clear_caches {
+    my ($self) = @_;
+    $self->_clear_mongo_collection_cache;
+    $self->_clear_mongo_database_cache;
+    $self->_clear_mongo_client;
+    return 1;
+}
+
 #--------------------------------------------------------------------------#
 # Private methods
 #--------------------------------------------------------------------------#
@@ -131,6 +140,7 @@ sub _mongo_check_connection {
     my $reset_reason;
     if ( $$ != $self->_mongo_pid ) {
         $reset_reason = "PID change";
+        $self->_set__mongo_pid($$);
     }
     elsif ( $self->_has_mongo_client && !$self->_mongo_client->connected ) {
         $reset_reason = "Not connected";
@@ -138,10 +148,7 @@ sub _mongo_check_connection {
 
     if ($reset_reason) {
         $self->_mongo_log( debug => "clearing MongoDB caches: $reset_reason" );
-        $self->_set__mongo_pid($$);
-        $self->_clear_mongo_collection_cache;
-        $self->_clear_mongo_database_cache;
-        $self->_clear_mongo_client;
+        $self->mongo_clear_caches;
     }
 
     return;
@@ -231,7 +238,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.004
+version 0.005
 
 =head1 SYNOPSIS
 
@@ -314,6 +321,13 @@ With no argument, the default database name is used.
 Returns a L<MongoDB::Collection>.  With two arguments, the first argument is
 the database name and the second is the collection name.  With a single
 argument, the argument is the collection name from the default database name.
+
+=head2 mongo_clear_caches
+
+    $obj->mongo_clear_caches;
+
+Clears the MongoDB client, database and collection caches.  The next
+request for a database or collection will reconnect to the MongoDB.
 
 =for Pod::Coverage BUILD
 

@@ -83,7 +83,7 @@
    "provides" : {
       "MooseX::Role::MongoDB" : {
          "file" : "lib/MooseX/Role/MongoDB.pm",
-         "version" : "0.004"
+         "version" : "0.005"
       }
    },
    "release_status" : "stable",
@@ -98,7 +98,7 @@
          "web" : "https://github.com/dagolden/MooseX-Role-MongoDB"
       }
    },
-   "version" : "0.004",
+   "version" : "0.005",
    "x_authority" : "cpan:DAGOLDEN"
 }
 

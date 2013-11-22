@@ -1,5 +1,11 @@
 Revision history for MooseX-Role-MongoDB
 
+0.005     2013-11-22 14:41:42 America/New_York
+
+    [ADDED]
+
+    - Added 'mongo_clear_caches' method
+
 0.004     2013-11-20 18:49:31 America/New_York
 
     [FIXED]

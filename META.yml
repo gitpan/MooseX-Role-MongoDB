@@ -33,7 +33,7 @@ no_index:
 provides:
   MooseX::Role::MongoDB:
     file: lib/MooseX/Role/MongoDB.pm
-    version: 0.004
+    version: 0.005
 requires:
   Carp: 0
   MongoDB::MongoClient: 0.702
@@ -51,5 +51,5 @@ resources:
   bugtracker: https://github.com/dagolden/MooseX-Role-MongoDB/issues
   homepage: https://github.com/dagolden/MooseX-Role-MongoDB
   repository: https://github.com/dagolden/MooseX-Role-MongoDB.git
-version: 0.004
+version: 0.005
 x_authority: cpan:DAGOLDEN

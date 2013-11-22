@@ -3,7 +3,7 @@ NAME
     collections
 
 VERSION
-    version 0.004
+    version 0.005
 
 SYNOPSIS
     In your module:
@@ -80,6 +80,12 @@ METHODS
     the database name and the second is the collection name. With a single
     argument, the argument is the collection name from the default database
     name.
+
+  mongo_clear_caches
+        $obj->mongo_clear_caches;
+
+    Clears the MongoDB client, database and collection caches. The next
+    request for a database or collection will reconnect to the MongoDB.
 
 CONFIGURING
     The role uses several private attributes to configure itself:
