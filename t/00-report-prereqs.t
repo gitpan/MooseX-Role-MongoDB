@@ -90,7 +90,7 @@ my $static_prereqs = do { my $x = {
                                    'List::Util' => '0',
                                    'Log::Any::Adapter' => '0',
                                    'Moose' => '0',
-                                   'MooseX::Role::Logger' => '0',
+                                   'MooseX::Role::Logger' => '0.002',
                                    'Parallel::Iterator' => '0',
                                    'Test::FailWarnings' => '0',
                                    'Test::More' => '0.96',

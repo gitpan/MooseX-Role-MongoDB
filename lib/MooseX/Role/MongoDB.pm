@@ -4,7 +4,7 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.006'; # VERSION
+our $VERSION = '0.007'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
@@ -272,7 +272,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.006
+version 0.007
 
 =head1 SYNOPSIS
 

@@ -72,7 +72,7 @@
             "List::Util" : "0",
             "Log::Any::Adapter" : "0",
             "Moose" : "0",
-            "MooseX::Role::Logger" : "0",
+            "MooseX::Role::Logger" : "0.002",
             "Parallel::Iterator" : "0",
             "Test::FailWarnings" : "0",
             "Test::More" : "0.96",
@@ -84,7 +84,7 @@
    "provides" : {
       "MooseX::Role::MongoDB" : {
          "file" : "lib/MooseX/Role/MongoDB.pm",
-         "version" : "0.006"
+         "version" : "0.007"
       }
    },
    "release_status" : "stable",
@@ -99,7 +99,7 @@
          "web" : "https://github.com/dagolden/MooseX-Role-MongoDB"
       }
    },
-   "version" : "0.006",
+   "version" : "0.007",
    "x_authority" : "cpan:DAGOLDEN"
 }
 
