@@ -4,7 +4,7 @@ use warnings;
 
 package MooseX::Role::MongoDB;
 # ABSTRACT: Provide MongoDB connections, databases and collections
-our $VERSION = '0.005'; # VERSION
+our $VERSION = '0.006'; # VERSION
 
 use Moose::Role 2;
 use MooseX::AttributeShortcuts;
@@ -21,8 +21,16 @@ use namespace::autoclean;
 # Dependencies
 #--------------------------------------------------------------------------#
 
+# =requires _logger
+#
+# You must provide a private method that returns a logging object.  It must
+# implement at least the C<info> and C<debug> methods.  L<MooseX::Role::Logger>
+# version 0.002 or later is recommended, but other logging roles may be
+# sufficient.
+#
+# =cut
 
-requires 'logger';
+requires '_logger';
 
 #--------------------------------------------------------------------------#
 # Configuration attributes
@@ -94,11 +102,19 @@ has _mongo_collection_cache => (
 sub _build__mongo_collection_cache { return {} }
 
 #--------------------------------------------------------------------------#
-# Public methods
+# Role methods
 #--------------------------------------------------------------------------#
 
+# =method _mongo_database
+#
+#     $obj->_mongo_database( $database_name );
+#
+# Returns a L<MongoDB::Database>.  The argument is the database name.
+# With no argument, the default database name is used.
+#
+# =cut
 
-sub mongo_database {
+sub _mongo_database {
     state $check = compile( Object, Optional [Str] );
     my ( $self, $database ) = $check->(@_);
     $database //= $self->_mongo_default_database;
@@ -108,8 +124,18 @@ sub mongo_database {
       $self->_mongo_client->get_database($database);
 }
 
+# =method _mongo_collection
+#
+#     $obj->_mongo_collection( $database_name, $collection_name );
+#     $obj->_mongo_collection( $collection_name );
+#
+# Returns a L<MongoDB::Collection>.  With two arguments, the first argument is
+# the database name and the second is the collection name.  With a single
+# argument, the argument is the collection name from the default database name.
+#
+# =cut
 
-sub mongo_collection {
+sub _mongo_collection {
     state $check = compile( Object, Str, Optional [Str] );
     my ( $self, @args ) = $check->(@_);
     my ( $database, $collection ) =
@@ -117,11 +143,19 @@ sub mongo_collection {
     $self->_mongo_check_connection;
     $self->_mongo_log( debug => "retrieving collection $database.$collection" );
     return $self->_mongo_collection_cache->{$database}{$collection} //=
-      $self->mongo_database($database)->get_collection($collection);
+      $self->_mongo_database($database)->get_collection($collection);
 }
 
+# =method _mongo_clear_caches
+#
+#     $obj->_mongo_clear_caches;
+#
+# Clears the MongoDB client, database and collection caches.  The next
+# request for a database or collection will reconnect to the MongoDB.
+#
+# =cut
 
-sub mongo_clear_caches {
+sub _mongo_clear_caches {
     my ($self) = @_;
     $self->_clear_mongo_collection_cache;
     $self->_clear_mongo_database_cache;
@@ -148,7 +182,7 @@ sub _mongo_check_connection {
 
     if ($reset_reason) {
         $self->_mongo_log( debug => "clearing MongoDB caches: $reset_reason" );
-        $self->mongo_clear_caches;
+        $self->_mongo_clear_caches;
     }
 
     return;
@@ -157,7 +191,7 @@ sub _mongo_check_connection {
 sub _mongo_log {
     my ( $self, $level, @msg ) = @_;
     $msg[0] = "$self ($$) $msg[0]";
-    $self->logger->$level( flog( [@msg] ) );
+    $self->_logger->$level( flog( [@msg] ) );
 }
 
 sub _parse_connection_uri {
@@ -238,7 +272,7 @@ MooseX::Role::MongoDB - Provide MongoDB connections, databases and collections
 
 =head1 VERSION
 
-version 0.005
+version 0.006
 
 =head1 SYNOPSIS
 
@@ -263,6 +297,21 @@ In your module:
     sub _build__mongo_default_database { return $_[0]->database }
     sub _build__mongo_client_options   { return $_[0]->client_options }
 
+    sub do_stuff {
+        my ($self) = @_;
+
+        # get "test" database
+        my $db = $self->_mongo_database("test");
+
+        # get "books" collection from default database
+        my $books = $self->_mongo_collection("books");
+
+        # get "books" collection from another database
+        my $other = $self->_mongo_collection("otherdb" => "books");
+
+        # ... do stuff with them
+    }
+
 In your code:
 
     my $obj = MyData->new(
@@ -274,9 +323,7 @@ In your code:
         },
     );
 
-    $obj->mongo_database("test");                 # test database
-    $obj->mongo_collection("books");              # in default database
-    $obj->mongo_collection("otherdb" => "books"); # in other database
+    $obj->do_stuff;
 
 =head1 DESCRIPTION
 
@@ -298,33 +345,34 @@ each time you need them.
 
 =head1 REQUIREMENTS
 
-=head2 logger
+=head2 _logger
 
-You must provide a method that returns a logging object.  It must implement
-at least the C<info> and C<debug> methods.  L<MooseX::Role::Logger> is
-recommended, but other logging roles may be sufficient.
+You must provide a private method that returns a logging object.  It must
+implement at least the C<info> and C<debug> methods.  L<MooseX::Role::Logger>
+version 0.002 or later is recommended, but other logging roles may be
+sufficient.
 
 =head1 METHODS
 
-=head2 mongo_database
+=head2 _mongo_database
 
-    $obj->mongo_database( $database_name );
+    $obj->_mongo_database( $database_name );
 
 Returns a L<MongoDB::Database>.  The argument is the database name.
 With no argument, the default database name is used.
 
-=head2 mongo_collection
+=head2 _mongo_collection
 
-    $obj->mongo_collection( $database_name, $collection_name );
-    $obj->mongo_collection( $collection_name );
+    $obj->_mongo_collection( $database_name, $collection_name );
+    $obj->_mongo_collection( $collection_name );
 
 Returns a L<MongoDB::Collection>.  With two arguments, the first argument is
 the database name and the second is the collection name.  With a single
 argument, the argument is the collection name from the default database name.
 
-=head2 mongo_clear_caches
+=head2 _mongo_clear_caches
 
-    $obj->mongo_clear_caches;
+    $obj->_mongo_clear_caches;
 
 Clears the MongoDB client, database and collection caches.  The next
 request for a database or collection will reconnect to the MongoDB.

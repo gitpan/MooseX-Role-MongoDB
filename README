@@ -3,7 +3,7 @@ NAME
     collections
 
 VERSION
-    version 0.005
+    version 0.006
 
 SYNOPSIS
     In your module:
@@ -27,6 +27,21 @@ SYNOPSIS
         sub _build__mongo_default_database { return $_[0]->database }
         sub _build__mongo_client_options   { return $_[0]->client_options }
 
+        sub do_stuff {
+            my ($self) = @_;
+
+            # get "test" database
+            my $db = $self->_mongo_database("test");
+
+            # get "books" collection from default database
+            my $books = $self->_mongo_collection("books");
+
+            # get "books" collection from another database
+            my $other = $self->_mongo_collection("otherdb" => "books");
+
+            # ... do stuff with them
+        }
+
     In your code:
 
         my $obj = MyData->new(
@@ -38,9 +53,7 @@ SYNOPSIS
             },
         );
 
-        $obj->mongo_database("test");                 # test database
-        $obj->mongo_collection("books");              # in default database
-        $obj->mongo_collection("otherdb" => "books"); # in other database
+        $obj->do_stuff;
 
 DESCRIPTION
     This role helps create and manage MongoDB objects. All MongoDB objects
@@ -60,29 +73,30 @@ DESCRIPTION
     each time you need them.
 
 REQUIREMENTS
-  logger
-    You must provide a method that returns a logging object. It must
+  _logger
+    You must provide a private method that returns a logging object. It must
     implement at least the "info" and "debug" methods. MooseX::Role::Logger
-    is recommended, but other logging roles may be sufficient.
+    version 0.002 or later is recommended, but other logging roles may be
+    sufficient.
 
 METHODS
-  mongo_database
-        $obj->mongo_database( $database_name );
+  _mongo_database
+        $obj->_mongo_database( $database_name );
 
     Returns a MongoDB::Database. The argument is the database name. With no
     argument, the default database name is used.
 
-  mongo_collection
-        $obj->mongo_collection( $database_name, $collection_name );
-        $obj->mongo_collection( $collection_name );
+  _mongo_collection
+        $obj->_mongo_collection( $database_name, $collection_name );
+        $obj->_mongo_collection( $collection_name );
 
     Returns a MongoDB::Collection. With two arguments, the first argument is
     the database name and the second is the collection name. With a single
     argument, the argument is the collection name from the default database
     name.
 
-  mongo_clear_caches
-        $obj->mongo_clear_caches;
+  _mongo_clear_caches
+        $obj->_mongo_clear_caches;
 
     Clears the MongoDB client, database and collection caches. The next
     request for a database or collection will reconnect to the MongoDB.
